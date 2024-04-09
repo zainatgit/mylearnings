@@ -1,0 +1,49 @@
+Elasic Stack
+---------
+Products by elastic
+Elastic Search - Full text search engine and analytics engine, built in java, easy to use and highly scalable. Often used for auto completing, correcting typos, handling synonyms
+Kibana - Dashboard for analysing and visulisation
+Logstash - Server-side data processing pipeline that ingests data from multiple sources,transforms it and sends to favourite stash - Kafka or Elasticsearch
+Beats - Collection of Data shippers. Lightweight agents which send data from thousand machines to Logstash or ES 
+X-Pack - Adds additional features to ES and Kibana - security (auth), monitoring of es clusters, ML on ES, Analyse data (recommendation), Elasticsearch SQL 
+----------
+IMPORTANT STARTUP COMMANDS
+Generate password "elastic" username
+elasticsearch-reset-password  -u elastic
+
+Generate token for Kibana
+elasticsearch-create-enrollment-token.bat --scope kibana
+
+Generate token for Node
+elasticsearch-create-enrollment-token.bat -s node
+
+-------
+Sharding
+breaking of indices into two or more parts, each piece is called shard
+Sharding is done at index level. Sharding improves performance by parallelization of queries.
+By default 1 shard only. 1 Shard has limit of 2 billion document
+Split API is used to create shard, Shrink API is used to reduce shards
+-------
+Replication
+replication is done to recover data in case of disk(node) failure
+replication is copying shards
+replication group is original shard + replicated shard
+Two advantages of replication are fault tolerance and parallelization
+-------
+Adding nodes to cluster
+1. Make multiple copies of elastic root folder and name it node1,node2..etc
+2. Go to config elasticsearch.yml and uncommnet node name and give node-1 name.
+3. Start first instance, generate enrollment-token using - elasticsearch-create-enrollment-token.bat -s node
+4. start second node by command - "elasticsearch.bat --enrollment-token <enrollment-token>"
+-------
+Node roles
+There are many nodes when we first start the elastic cluster.
+Master role -- Responsible for cluster wide action like creating,deleting node, which nodes are part of cluster and which shards to allocate to which node. Does not store document
+To make a node master node, put node.master=true in config file
+Data role -- hold the shards that contain document you have indexed, put node.data=true and node.master=false
+Ingest role -- node.ingest=true to run ingest pipeline. manipulate docs before adding index to them. removes/adds additional fields. It is simplified version
+of logstash within ES. In case of beat use, turn it off.
+ML role -- node.ml=true & x-pack.ml.enabled=true 
+Coordination role -- Route queries to other nodes, load balancer, if you set all above node.<x>=false, the node will become coordination node
+Voting only node --  decides if two master nodes are configured true then which one to chose.
+-------

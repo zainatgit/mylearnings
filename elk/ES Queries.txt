@@ -1,0 +1,107 @@
+ES Queries
+---------
+get _cluster/health
+get _cat/nodes?v
+get _cat/shards?v
+
+-----
+PUT student -- create index
+PUT/POST student/_doc/<optional_id> -- insert doc
+{
+	"name" : "Zain"
+	"marks" : "95"
+}
+If you do PUT in above and give id it will replace the doc
+
+Delete student/_doc/<id> -- delete doc
+-------------
+Updating
+
+Normal update
+POST student/_update/<id>
+{
+	"doc" : {
+		"key1" : "value1",
+		"key2" : "value2"
+	}
+
+}
+This updates if key already present otherwise adds new key. Note - In ES update doesn't happen instead behind the scenes replace happens
+
+Scripted update
+POST student/_update/<id>
+{
+	"script" : {
+		"source" : "ctx._source.age=35",
+	}
+}
+script can be used to write logic
+ctx is complete document, _sorce is main doc part
+
+We can also use params instead of hardcoding values
+POST student/_update/<id>
+{
+	"script" : {
+		"source" : "ctx._source.age=params.new_age",
+		"params" : {
+			"new_age" : 35
+		}
+	}
+}
+This is done so that backend logics can quickly adjust
+
+Example of multiline script
+POST /my_index/_update/1
+{
+  "script": {
+    "source": """
+      if (ctx._source.likes == null) {
+        ctx._source.likes = params.likes;
+      } else {
+        ctx._source.likes += params.likes;
+      }
+    """,
+    "lang": "painless",
+    "params": {
+      "likes": 1
+    }
+  }
+}
+Note """ is used to write multiline script
+
+Update with upsert
+PUT student/_update/<id>
+{
+	"script" : {
+		"source" : "ctx._source.age++"
+	},
+	"upsert" : {
+		"name" : "Zain"
+		"marks" : "95"
+	}
+}
+Now in normal update, if id not present then document_not_found exception but here upsert will add the document as per defined.
+-------------
+Searching
+
+GET student/_search   --- fetch all docs
+{
+	"query" : {
+		"match_all" : {
+		}
+	}
+}
+format is likes
+
+GET student/_search   --- fetch all docs
+{
+	"query" : {
+		//Your query here
+	},
+	//Additional params and options included here
+}
+Types of query
+1. Match Query -- used to perform full text search on a field. Matches the document that contain specific term.
+
+
+

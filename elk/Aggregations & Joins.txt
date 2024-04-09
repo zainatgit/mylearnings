@@ -1,0 +1,46 @@
+Aggregations
+----------------
+Aggregations allow you to perform analysis and insights on your indexed data. They are used to group, filter and compute statistics on your data.
+NOTE - We can do aggregation on keyword like integer,float,long etc and not on text
+Example :  Find distribution by genre. Find avg rating of movies released in 2010
+Three types of aggregations.
+--------------------------------
+1. Metric aggrregation.
+--------------------------------
+They provide insights into numerical values within a document.
+GET /movies/_search
+{
+	"size" : 0,
+	"query" : {
+		"match_all" : {}
+	},
+	"aggs" : {
+		"<custom_name_of_aggregation>" : {
+			"avg" : {
+				"field" : "lengthOfMovie"
+			}
+		}
+	}
+}
+This will give avg length of movie in , we put size 0 so that in result we don't get all the documents. We can use comma separated aggregations
+..
+"aggs" : {
+		"<custom_name_of_aggregation>" : {
+			"avg" : {
+				"field" : "lengthOfMovie"
+			}
+		},
+		"<custom_name_of_aggregation>" : {
+			"sum" : {
+				"field" : "lengthOfMovie"
+			}
+		}
+	}
+	
+Similary we have min, max, cardinality (distinct) (read about precision threshold), value_count, stats
+--------------------------------
+1. Bucket aggrregation.
+--------------------------------
+Bucket aggregations organize documents into "buckets" or groups based on certain criteria. These criteria can be fields, ranges, date intervals, etc. They help you understand
+the distribution of data within various categories. Bucket aggregations as opposed to matric aggregations, can hold sub-aggregations. These sub-aggregations will be aggregated
+for the buckets created by their "parent" bucket aggregation

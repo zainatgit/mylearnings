@@ -1,0 +1,260 @@
+ES is all about search
+GET /<index_name>/_search
+{
+  "query": {
+    // Query here
+  }
+  //Additional params
+}
+---------------------------------------------
+Types of queries
+---------------------------------------------
+1. Match Query 
+Used for full text search( present in "text" type variable of document ). Matches document that contains a specific term.
+How it works. The text fields in ES are already analyzed (we can give custom analyzers as well) behind the scenes. ES uses analyzers to process and tokenize text before indexing
+Match query analyzes the given text and searches for document where analyzed text matches the term. Relavant document are sorted as per relevance score.
+You may use match query to find boolean, number etc too.
+{
+  "query": {
+    "match" : {
+		"field_name" : "search_term"
+	}
+  }
+}
+
+In case of space separated terms, by deafult "or" operator is used. The above query for match is shortcut. The actual query is :
+{
+  "query": {
+    "match": {
+      "query": {
+        "field_name": "search_term",
+		"operator" : "or"
+      }
+    }
+  }
+}
+This is called using match query with options. Other option is "fuzziness".
+Difference between text field and keyword field is that text field are analyzed but keywords are not. When using match on keyword field, it looks for exact match.
+Example In text field match you will find result irrespective of casing, but in keyword it will match case as well.
+---------------------------------------------
+2. Disjunction Max Query
+Combines multiple queries and returns the document that match any of the queries with the highest score.
+It is useful for situations where multiple queries clauses representing different aspect of search and documents mathing any of these clauses are returned
+Two components : 
+1. Query Clauses : comma separated queries
+2. Tie Breaker : It is optional param, default value is 0. Lies b/w 0 to 1. 0 means only maximum score matters and 1 means individual score matters. So tie breaker helps in 
+determining how much individual query score matters in final relevance score.
+Note : "queries" is array of term { "field" : "value" }
+GET /_search
+{
+  "query": {
+    "dis_max": {
+      "queries": [
+        { "term": { "title": "action" } },  -- will search for quick pets in title
+        { "term": { "description": "exciting" } } 	-- will search for quick pets in body
+      ],
+      "tie_breaker": 0.7
+    }
+  }
+}
+Relevance score for a doc = max query score(among subqueries)  + tie_breaker*sum of individual query score	
+-------------------------------------------------
+3. Multimatch query
+A versatile query that allows to match same query for multiple fields and combines the result. Searches for a specific term across multiple fields giving you flexibility 
+to prioritize certain fields over the other and control how search results are ranked.
+GET /_search
+{
+  "query": {
+    "multi_match" : {
+      "query":    "cricket chess", 
+      "fields": [ "bio", "hobbies^2" ].
+	  "type" : "best_fields" // optional
+	  "tie_breaker" : 0.2 //optional .. here also tie breaker can be used to reward non-max score queries
+    }
+  }
+}
+supports wildcard in fields like ho* will consider hobbies and home. If no fields given then "." means all fields. To boost a field use ^ caret. 
+"type" parameter. Default is "best_fields".
+best_fields : finds document which matches any field but uses _score from the best field. (uses match behind the scence for each field)
+most_fields : finds document which match any field but combines _score from each field.
+cross_fields : treats fields with the same analyzer as though they were one big field. looks for each word in any field.
+phrase and phrase_prefix are also there which use extra functionalities to determine score.
+-------------------------------------------------
+4. IDs Query
+Allows you to specify an array of document IDs to match. It retreives docs that have IDs that match any of provided IDs
+{
+	"query" : {
+		"ids" : {
+			"values" : ["1","2","3"]
+		}
+	}
+}
+-------------------------------------------------
+5. Term Query
+This query is used to find documents that contain a specific exact term in a particular field. We know datatype text is anlyzed but datatype keyword is kept as it is.
+Therefore we can say it is useful for searching fields that are not analyzed like keywords, boolean, number, dates
+{
+	"query" : {
+		"term" : {
+			"<field_name>" : {
+				"value" : "<text_to_match>",
+				"case_insensive" : true //optional
+			}
+		}
+	}
+}
+It works on exact match so operators like or/and wont work
+-------------------------------------------------
+6. Range Query
+It matches document where field value falls withing specified range of values.
+{
+	"query" : {
+		"range" : {
+			"<field_name>" : { 
+					"gte" : lower_bound,
+					"lte" : upper_bound
+			}
+		}
+	}
+}
+-------------------------------------------------
+7. Boolean Query (must,must_not,should,filter)
+A boolean query allows you to combine multiple queries using boolean operators (must, should, must_not, filter) and AND OR NOT to create more complex queries
+{
+	"query" : {
+		"bool" : {
+			"must" : [
+				{
+					"match" : {
+						"bio" : "cricket"
+					}
+				},
+				{
+					"match" : {
+						"bio" : "chess"
+					}
+				}
+			]
+		}
+	}
+} -- will return docs with bio cricket and chess
+must works as AND, should works as OR
+just like must, we also have must_not - opposite to must. Inside these clauses we can use match query, term, range etc queries.
+We can also combine multiple operators one after the other.
+minimum_should_match=1 is optional parameter that can be used with should operator.
+Difference between must and filter is that in filter relevant score does not matter, _score is 0 as it is just filtering the result. Filter is faster than must.
+Result of filter and must_not can be cached therefore is faster and score does not matter
+-------------------------------------------------
+8. Exists Query
+Matches documents where the specified field exists. Note : field's value should have been indexed.
+GET /students/_search
+{
+	"query" : {
+		"exists" : {
+			"field" : "<field_name>"
+		}
+	}
+}
+null and [] will not come however "" passes exists test.
+-------------------------------------------------
+9. Wildcard query
+This query supports wildcard patterns to match documents based on a pattern. Wildcards are placeholders that allow you to match a range of terms with similar patterns.
+Two wildcard characters 
+* - matches any sequence of characters
+? - matches single character
+{
+	"query" : {
+		"wildcard" : {
+			"name" : "???i"
+		}
+	}
+}
+above query matches name like gogi, bali, rumi etc
+go* will match gondola, gogi, goli etc. wildcard queries are not analyzed like match queries therefore they are case sensitive
+-------------------------------------------------
+10. Prefix query
+Matches document that have fields containing terms with a specified prefix. These are also not analyzed like wildcard
+{
+	"query" : {
+		"prefix" : {
+			"name" : "Go"
+		}
+	}
+}
+-------------------------------------------------
+11. Match phrase prefix query
+Search for documents where a specified field contains a specific phrase prefix. Particularly useful when you want docs that start with certain phrase and potentialy continue
+with more characters. Helpful for scenarios like autocomplete suggestions
+{
+	"query" : {
+		"match_phrase_prefix" : {
+			"bio" : "Exploring life"
+		}
+	}
+}
+-------------------------------------------------
+12. Match phrase query
+It is a type of full-text query in elasticsearch that is designed to search for documents where a specific phrase appreas exactly as it is given in query.
+Order matters and exact match requirement and case sensitive
+{
+	"query" : {
+		"match_phrase" : {
+			"bio" : "sweeth tooth and "
+		}
+	}
+}
+-------------------------------------------------
+13. Nested query
+Used to query nested objects within documents. Used to query arrays of objects. For example each doc of student index has bag as following : 
+bag : [
+	{
+		"item" : "chocolate",
+		"quantity" : 2
+	},
+	{
+		"item" : "whistle",
+		"quantity" : 4
+	},
+	{
+		"item" : "book",
+		"quantity" : 4
+	}]
+
+GET /students/_search
+{
+	"query" : {
+		"nested" : {
+			"query" {
+				"must" : [
+				{
+					"match" : {
+						"bag.item" : "whistle"
+					}
+				},
+				{
+					"range" : {
+						"bag.quantity" : {
+							"gte" : 2
+						}
+					}
+				}
+				]
+			}
+		}
+	}	
+}
+-------------------------------------------------
+Parameters
+1. size -- lets you select the size of docs,same level as query
+2. _source - lets you select the name of variable.
+{
+	"size" : 5, //only 5 docs returned
+	"_source" : ["name"] //only name field is returned
+	"from" : 2 //offset, skips first 2 
+	"query" : {
+		"match_all" : {}
+	}
+}
+-------------------------------------------------
+
+
