@@ -73,5 +73,3 @@ Above query will first group by genre, give count and also give stats of rating 
 		"max" : 10.0000
 		"avg" : 8.50000
 		"sum" : 17
-	}
-}
