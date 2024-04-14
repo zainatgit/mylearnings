@@ -1,12 +1,12 @@
 Elasic Stack
----------
+----------------------------------
 Products by elastic
 Elastic Search - Full text search engine and analytics engine, built in java, easy to use and highly scalable. Often used for auto completing, correcting typos, handling synonyms
 Kibana - Dashboard for analysing and visulisation
 Logstash - Server-side data processing pipeline that ingests data from multiple sources,transforms it and sends to favourite stash - Kafka or Elasticsearch
 Beats - Collection of Data shippers. Lightweight agents which send data from thousand machines to Logstash or ES 
 X-Pack - Adds additional features to ES and Kibana - security (auth), monitoring of es clusters, ML on ES, Analyse data (recommendation), Elasticsearch SQL 
-----------
+----------------------------------
 IMPORTANT STARTUP COMMANDS
 Generate password "elastic" username
 elasticsearch-reset-password  -u elastic
@@ -17,25 +17,25 @@ elasticsearch-create-enrollment-token.bat --scope kibana
 Generate token for Node
 elasticsearch-create-enrollment-token.bat -s node
 
--------
+----------------------------------
 Sharding
 breaking of indices into two or more parts, each piece is called shard
 Sharding is done at index level. Sharding improves performance by parallelization of queries.
 By default 1 shard only. 1 Shard has limit of 2 billion document
 Split API is used to create shard, Shrink API is used to reduce shards
--------
+----------------------------------
 Replication
 replication is done to recover data in case of disk(node) failure
 replication is copying shards
 replication group is original shard / primary shard + replicated shard
 Two advantages of replication are fault tolerance and parallelization
--------
+----------------------------------
 Adding nodes to cluster
 1. Make multiple copies of elastic root folder and name it node1,node2..etc
 2. Go to config elasticsearch.yml and uncommnet node name and give node-1 name.
 3. Start first instance, generate enrollment-token using - elasticsearch-create-enrollment-token.bat -s node
 4. start second node by command - "elasticsearch.bat --enrollment-token <enrollment-token>"
--------
+----------------------------------
 Node roles
 There are many nodes when we first start the elastic cluster.
 Master role -- Responsible for cluster wide action like creating,deleting node, which nodes are part of cluster and which shards to allocate to which node. Does not store document
@@ -46,7 +46,7 @@ of logstash within ES. In case of beat use, turn it off.
 ML role -- node.ml=true & x-pack.ml.enabled=true 
 Coordination role -- Route queries to other nodes, load balancer, if you set all above node.<x>=false, the node will become coordination node
 Voting only node --  decides if two master nodes are configured true then which one to chose.
--------
+----------------------------------
 Routing
 On which shard does the ES store the document ? How does ES know in which shard to search for a document ?
 Answer to these questions is sharding
@@ -54,18 +54,18 @@ shard_number = hash*_routing  %  num_primary_shards -- same formula is used to s
 _routing is by default _id
 What if a primary shard is added after adding a document. Now same formula will give different response and will impact searching.
 So adding shards after documents have been ingested is not allowed in ES
--------
+----------------------------------
 How read works in ES
 GET call first goes to coordination node.
 Then it directs to data node.
 Then via routing it gets redirected to mapped replication group(contains 1 primary shard and rest replica shard)
 Then via ARS ( Adaptive replica selection ) that replica is selected that is free/search is optimized
 Then we get final document that is sent back to coordination node then to client
--------
+----------------------------------
 How write works in ES
 PUT request is sent to coordination node. It then sends to routing which selects replication group. The data reaches at doorstep of primary shard.
 Now data is validated then saved in primary shard. then it is saved in all replicas
--------
+----------------------------------
 What are primary_term and seq_no ? 
 They are used to maintain consistency among the replication shards if while moving data from primary shard to replicas(happens in sequence), primary shard goes down.
 As primary shard goes down, a replica is selected as primary shard by voting.
@@ -74,4 +74,81 @@ seq_no - counter for each write operation in replication group.
 Global checkpoint - a checkpoint for complete replication group.
 Local checkpoint  - a checkpoint for a replica.
 checkpoint is basically seq number. So combination of these maintains consistency in case of primary shard failure.
--------
+----------------------------------
+Optimistic Concurrency control
+Concurrency problem : When two clients try updating the value of a field there might be inconsistency. Classic thread problem.
+As we know primary_term and seq_no are used to maintain version of document. On every update seq_no changes. So we should always make use of primary_term and seq_no while updating
+eg : PUT /student/_update/<id>?if_primary_term=2&if_seq_no=28. If this fails then version is updated so use the latest
+----------------------------------
+update_by_query & delete_by_query
+We know simple update and delete, but what if we want to perform same actions on multiple documents just like in sql where statement. For this we make use of script
+Eg : 
+POST customers/_update_by_query -- will increase age of all the customers by 1
+{
+	"query" : {
+		"match_all" : {}
+	},
+	"script" : {
+		"source" : "ctx._source.age++"
+	}
+}
+Note : ctx means complete document
+----------------------------------
+Bulk API in Elasticsearch
+Used when dealing with large set of documents. It is designed to be more efficient when dealing with large volumes of data, as it reduces the overhead of making individual
+requests for each document. You provide sequence of actions and data in a single HTTP request, and elasticsearch processes them in a batch. The action can be index, create
+update, delete and the data contains the actual document to be indexed or updated in the same request.
+Request structure : 
+{ action : {}}
+{data}
+----------------------------------
+Analyzers 
+Analysis is converting texts to terms/tokens so that they can be effectively stored and searched. ES uses very powerful text analysis engine. Inverted index is the data structure
+that is created to store these terms for fast search retreival.
+Analyzers store texts in three stages.
+1. Character filter
+Used to filter out html tags, spl character etc before tokenization. By default character filter is not enabled.
+2. Tokenization 
+Default tokenizer - Splits texts into words based on whitespace and punctuation.
+3. Tokenization filter
+Lowercase Token filter, converts all tokens to lowercase.
+We can make custom analyzers as well. We can test the anayzer using _analyzer api.
+----------------------------------
+Inverted Index 
+An inverted index is a fundamental DS used to effeciently store and retreive information from a large collection of documents. It is the backbone of ES powerful and fast 
+full-text search capabilities. For each token, the inverted index maintains a list of document IDs where the token appears. It creates mapping b/w each token and corresponding
+document id and frequency that contain that token.
+Now lets look at what Forward Index means.
+Unlike Inverted index, FI is not a comman term used in DB systems. It is nothing special, it just stores the document in a location sequentially 
+and we can use id to get the document.
+Note : When we index a document with two text fields, two inverted indexes are created one for each text field.
+----------------------------------
+How does doc_values work ES ?
+Numeric fiels /Date fields are stored in a different way comparted to text fields in ES. SO instead of Inverted index, Doc Values data structure is used which allows for efficient
+numerical range queries and aggregations. We can also decide what DS to use and also ask ES to enable or disable indexing.
+----------------------------------
+Mapping in ES
+Defines how documents and their fields are stored and indexed in ES. They define data type of fields and how they should be analysed. 
+PUT /my-index-000001
+{
+  "mappings": {
+    "properties": {
+      "age":    { "type": "integer" },  
+      "email":  { "type": "keyword"  }, 
+      "name":   { "type": "text"  }     
+    }
+  }
+}
+While dynamic mapping(mapping done by ES by default) can be helpful for quickly getting started, explicit mapping is essential for data control, consistency and
+optimising the search performance.
+Advantages of explicit mapping:
+1. Preventing type conflicts -- once data type defined does not allow client to enter other values.
+2. ES doesn't need to spend resources in analyzing and guessing data types for new field.
+3. Explicit mapping allows to define validation rules and ensure data integrity during indexing.
+If we put dynamic : false at properties level, then even if new field are added using POST, the document won't accept new field. dynamic : strict gives error while adding
+
+Mapping APIs
+GET students/_mapping --> gives defined mapping
+GET students/_mapping/field/name --> gives mapping of field
+PUT students/_mapping --> we can add fields in mapping
+If you want to update the mappping of a field i.e change data type , you have to create new index and copy all the documents.
