@@ -151,4 +151,46 @@ Mapping APIs
 GET students/_mapping --> gives defined mapping
 GET students/_mapping/field/name --> gives mapping of field
 PUT students/_mapping --> we can add fields in mapping
-
+If you want to update the mappping of a field i.e change data type , you have to create new index and copy all the documents i.e reindex
+----------------------------------
+Reindex API
+It is basically copy paste from original index to target index
+POST _reindex
+{
+  "source": {
+    "index": "my-index-000001"
+  },
+  "dest": {
+    "index": "my-new-index-000001"
+  }
+}
+Via parameters, we can do selective reindexing, we can add scripts, do modifications as well. Using "query" we can only index documents which satisfy the conditions
+----------------------------------
+Coercion
+The process of automatically converting data from one type to another during indexing or searching when the data type in the mapping does not match the data provided.
+Elasticsearch performs coercion to accommodate data that might not precisely match the expected data type defined in the mapping.
+It is just like auto casting in java. if field is of type long and we add "10", string will be automatically converted and stored as long. If we want to disable coercian,
+we can put the param coerce : false, it will not allow ES to convert data type but take only the defined one.
+If coercian is defined at global level as false, but at field level its true then priority will be given always to field level.
+----------------------------------
+Data Types in Elastic
+text,keyword, integer, long, float, double, boolean, object, nested (array of object)
+----------------------------------
+Index Template in Elastic
+An index template in ES is a way to define a set of configurations and mappings that will be automatically applied to new indices that match a specific pattern.
+Index template are useful for automating the process of setting up and configuring indices in ES, especially when you have a consistent naming convention for your indices
+or want to apply common settings to multiple indices.
+----------------------------------
+Elastic Common Schema ECS (not important)
+ECS is a standardized data schema designed to provide a common set of field names and data types for logs and metrics in the Elastic Search which includes Elasticsearch,Kibana
+Logstash, Beats, and other related components.
+ECS was introduced by Elasic to promote interoperability, consistency, and ease of data analysis across different data sources and applications.
+----------------------------------
+Aliases 
+In ES an alias is an additional name or label asssigned to one or more indexes. It acts as a pointer to the underlying indexes, allowing users to interact with them using more
+user-friendly name. Aliases are dynamic and can be added, removed, or changed at any time withou reindexing the data.
+It is useful when we want to reindex into new index, so we can easily point our alias to new index instead of changing application code.Other benfits are in case of
+1. Blue Green Deployment : When new version is ready just point alias to new index.
+2. Filtered Queries : Aliases enable the use of filtered queries. You can define an alias with a specific filter, and all queries routed through that alias will be automatically
+filtered accordingly.	
+3. Cross-Cluster Search : Aliases can also be used to perform cross-cluster search, allowing you to run queries across multiple clusters as if they were a single entity.

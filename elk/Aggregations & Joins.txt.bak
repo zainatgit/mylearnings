@@ -7,6 +7,7 @@ Three types of aggregations.
 --------------------------------
 1. Metric aggrregation.
 --------------------------------
+Metric aggregations calculate metrics (statistics) over a set of documents. They provide insights into the numeric values within the document.
 They provide insights into numerical values within a document.
 GET /movies/_search
 {
@@ -38,12 +39,13 @@ This will give avg length of movie in , we put size 0 so that in result we don't
 	}
 	
 Similary we have min, max, cardinality (distinct) (read about precision threshold), value_count, stats (gives min, max, avg, count etc)
+Note : Cardinality calculated is approx, for accurate count we have to use precision_threshold, default value is 3000
 --------------------------------
-1. Bucket aggrregation.
+2. Bucket/GroupBy/Nested aggregation.
 --------------------------------
 Bucket aggregations organize documents into "buckets" or groups based on certain criteria. These criteria can be fields, ranges, date intervals, etc. They help you understand
 the distribution of data within various categories. Bucket aggregations as opposed to metric aggregations, can hold sub-aggregations. These sub-aggregations will be aggregated
-for the buckets created by their "parent" bucket aggregation. Bucket agg supports nested aggregations. i.e you can write aggregation within an aggregations
+for the buckets created by their "parent" bucket aggregation. Bucket agg supports nested aggregations. i.e you can write aggregation within an aggregations. It is nested aggs
 eg 
 {
 	"aggs" : {
@@ -73,3 +75,18 @@ Above query will first group by genre, give count and also give stats of rating 
 		"max" : 10.0000
 		"avg" : 8.50000
 		"sum" : 17
+	}
+},
+{
+	"key" : "Drama",
+	"doc_count" : 3,
+	"my_stats" : {
+		"count" : 3,
+		"min" : 8.80000
+		"max" : 10.0000
+		"avg" : 8.50000
+		"sum" : 17
+	}
+} ...
+
+Similary like terms we have filter, filters, range, histogram(groups by interval), date_histogram
