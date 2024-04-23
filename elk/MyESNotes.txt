@@ -204,3 +204,19 @@ POST _aliases
 			}
 	}]
 }
+----------------------------------
+Fuzziness
+A search technique that allows for approximate matching of terms rather than strict exact matches. Particularly useful when dealing with typos, misspelling, or variations
+in a word forms, enabling ES to retreive relevant documents. 
+Fuzziness is controlled by the fuzziness parameter, which is non-negative integer value representing the allowable edit distance b/w the search term and the terms in the 
+indexed documents. Edit distance refers to single character changes needed to transform one term into another. A higher fuzziness value allows for more differences b/w terms
+{
+	"query" : {
+		"match" : {
+			"name" : {
+			"query" : "night"
+			"fuzziness" : 1
+			}
+		}
+	}
+}
