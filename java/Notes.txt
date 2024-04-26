@@ -1,0 +1,8 @@
+Process vs Threads
+-------------------
+Process is an instance of a program getting executed. It has its own resources like memory, thread etc that OS allocates when process is created.
+Process are independent of each other,never share resources
+One process can have multiple threads. Threads are known as lightweight process, they are the smallest sequence of instructions that are executed by CPU independently.
+When a process is created, it starts with one thread initially knows as main thread and from that we can create multiple threads to perform task concurrently.
+When you run two java programs, two separate JVM instance are created. But total JVM heap memory is fixed and the two share from it.
+java -Xms256m -Xmx2g Program1 --- Xms sets initial heap memory while Xmx sets max heap memory for process1, if more memory is required then "Out of Memory" error will occur
